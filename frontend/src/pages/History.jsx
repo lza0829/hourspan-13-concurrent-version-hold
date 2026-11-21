@@ -1,28 +1,49 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 
+// SCD 历史维展示 + 跑次应用。应用采用全局架构"甲·冲突入搁置"：
+// 成功者写正式维；同键后到冲突者落搁置行并返回回执，正式维不变。
 export default function History() {
   const [rows, setRows] = useState([]);
   const [storeId, setStoreId] = useState("");
   const [detectRunId, setDetectRunId] = useState("");
   const [msg, setMsg] = useState("");
+  const [receipt, setReceipt] = useState(null);
   const [err, setErr] = useState("");
 
-  const reload = () => {
-    const q = storeId.trim() ? `?store_id=${encodeURIComponent(storeId.trim())}` : "";
+  const reload = (sid) => {
+    const q = (sid ?? storeId).trim() ? `?store_id=${encodeURIComponent((sid ?? storeId).trim())}` : "";
     return api(`/api/history${q}`).then(setRows).catch((e) => setErr(String(e.message || e)));
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(""); }, []);
 
   const apply = async () => {
     setErr("");
+    setReceipt(null);
     try {
       const r = await api("/api/scd/apply", {
         method: "POST",
         body: JSON.stringify({ detect_run_id: detectRunId.trim() }),
       });
       setMsg(JSON.stringify(r, null, 2));
+      setReceipt(r);
+      await reload();
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  };
+
+  const abandon = async () => {
+    setErr("");
+    setReceipt(null);
+    try {
+      const r = await api("/api/scd/abandon", {
+        method: "POST",
+        body: JSON.stringify({ detect_run_id: detectRunId.trim() }),
+      });
+      setMsg(JSON.stringify(r, null, 2));
+      setReceipt(r);
       await reload();
     } catch (e) {
       setErr(String(e.message || e));
@@ -34,7 +55,10 @@ export default function History() {
       <div className="topbar">
         <div>
           <h1>历史维</h1>
-          <p>Type2：关旧行（valid_to + is_current=0）并开新行；与当前镜同源。</p>
+          <p>
+            Type2：关旧行（valid_to + is_current=0）并开新行；与当前镜同源。
+            同键后到冲突落搁置行（键 + 冲突 run 对 + 当时 is_current 快照），正式链始终只有一段当前。
+          </p>
         </div>
       </div>
       <div className="panel">
@@ -45,7 +69,7 @@ export default function History() {
             placeholder="按门店过滤，如 ST-EAST-01"
             style={{ minWidth: 200, padding: "0.4rem 0.6rem", borderRadius: 8, border: "1px solid var(--line)", background: "#0c2226", color: "var(--text)" }}
           />
-          <button className="secondary" onClick={reload}>查询历史</button>
+          <button className="secondary" onClick={() => reload()}>查询历史</button>
           <input
             value={detectRunId}
             onChange={(e) => setDetectRunId(e.target.value)}
@@ -53,7 +77,20 @@ export default function History() {
             style={{ minWidth: 220, padding: "0.4rem 0.6rem", borderRadius: 8, border: "1px solid var(--line)", background: "#0c2226", color: "var(--text)" }}
           />
           <button onClick={apply}>应用 Type2 开闭</button>
+          <button className="secondary" onClick={abandon}>放弃跑次</button>
         </div>
+        {receipt && (
+          <p>
+            结果：
+            <span className={`badge ${receipt.outcome === "applied" ? "ok" : receipt.outcome === "partial_hold" ? "suspended" : "bad"}`}>
+              {receipt.outcome || "—"}
+            </span>
+            <span className="muted" style={{ marginLeft: 10 }}>
+              正式写 {receipt.applied_count ?? 0} · 搁置 {receipt.held_count ?? 0} · 租约已释放 {String(receipt.lease_released ?? "—")}
+            </span>
+            {receipt.replayed && <span className="badge">回执重放</span>}
+          </p>
+        )}
         {msg && <pre className="msg">{msg}</pre>}
         {err && <p className="error">{err}</p>}
       </div>

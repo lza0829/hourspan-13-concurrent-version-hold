@@ -12,8 +12,8 @@ STUBS = [
     "hist_row_hash_proof",
     "detect_coverage_member_proof",
     "draft_then_commit_switch",
-    "concurrent_version_hold",
     "snapshot_field_allowlist",
     "region_cut_audit",
     "batch_detect_hist_reconcile",
 ]
+# 已实现：concurrent_version_hold（并发版本持锁 · 甲·冲突入搁置）。

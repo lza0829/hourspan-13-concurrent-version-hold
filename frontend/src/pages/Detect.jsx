@@ -24,12 +24,43 @@ export default function Detect() {
     }
   };
 
+  const apply = async (runId) => {
+    setErr("");
+    try {
+      const r = await api("/api/scd/apply", {
+        method: "POST",
+        body: JSON.stringify({ detect_run_id: runId }),
+      });
+      setMsg(JSON.stringify(r, null, 2));
+      await reload();
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  };
+
+  const abandon = async (runId) => {
+    setErr("");
+    try {
+      const r = await api("/api/scd/abandon", {
+        method: "POST",
+        body: JSON.stringify({ detect_run_id: runId }),
+      });
+      setMsg(JSON.stringify(r, null, 2));
+      await reload();
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  };
+
   return (
     <>
       <div className="topbar">
         <div>
           <h1>变更检测</h1>
-          <p>对照当前镜与快照 row_hash，产出变更清单（new / attr_change）。</p>
+          <p>
+            对照当前镜与快照 row_hash 产出变更清单（new / attr_change）。跑次以 open 落库 = 未提交草稿；
+            同键后到 apply 将落搁置（甲·冲突入搁置），正式维不变。
+          </p>
         </div>
       </div>
       <div className="panel">
@@ -49,15 +80,37 @@ export default function Detect() {
       <div className="panel">
         <h2>检测跑次</h2>
         <table>
-          <thead><tr><th>跑次</th><th>批</th><th>时间</th><th>变更数</th><th>报告摘要</th></tr></thead>
+          <thead>
+            <tr>
+              <th>跑次</th><th>序号</th><th>批</th><th>状态</th><th>时间</th><th>变更数</th>
+              <th>未提交键</th><th>搁置</th><th>操作</th>
+            </tr>
+          </thead>
           <tbody>
             {runs.map((r) => (
               <tr key={r.id}>
                 <td className="mono">{r.id}</td>
+                <td>{r.seq ?? "—"}</td>
                 <td className="mono">{r.batch_id || "—"}</td>
+                <td>
+                  <span className={`badge ${r.status === "open" ? "suspended" : r.status === "applied" ? "ok" : ""}`}>
+                    {r.status || "closed"}
+                  </span>
+                </td>
                 <td>{r.created_at}</td>
                 <td>{r.changed_count}</td>
-                <td className="mono">{(r.report_json || "").slice(0, 120)}</td>
+                <td className="mono">{(r.pending_stores || []).join(", ") || "—"}</td>
+                <td>{r.held?.length ? <span className="badge suspended">{r.held.length}</span> : "—"}</td>
+                <td>
+                  {r.status === "open" ? (
+                    <span className="actions">
+                      <button onClick={() => apply(r.id)}>应用</button>
+                      <button className="secondary" onClick={() => abandon(r.id)}>放弃</button>
+                    </span>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

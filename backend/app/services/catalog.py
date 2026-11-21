@@ -12,8 +12,14 @@ def overview(conn):
         ).fetchone()["c"],
         "入档批": conn.execute("SELECT COUNT(*) AS c FROM ingest_batches").fetchone()["c"],
         "检测跑次": conn.execute("SELECT COUNT(*) AS c FROM detect_runs").fetchone()["c"],
+        "未提交跑次": conn.execute(
+            "SELECT COUNT(*) AS c FROM detect_runs WHERE status='open'"
+        ).fetchone()["c"],
         "核证条": conn.execute("SELECT COUNT(*) AS c FROM scd_proofs").fetchone()["c"],
         "搁置": conn.execute("SELECT COUNT(*) AS c FROM quarantine").fetchone()["c"],
+        "版本搁置": conn.execute("SELECT COUNT(*) AS c FROM version_holds").fetchone()["c"],
+        "持租键": conn.execute("SELECT COUNT(*) AS c FROM version_leases").fetchone()["c"],
+        "并发架构": "甲·冲突入搁置",
     }
 
 

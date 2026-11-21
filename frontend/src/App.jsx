@@ -6,6 +6,7 @@ import Detect from "./pages/Detect.jsx";
 import History from "./pages/History.jsx";
 import Current from "./pages/Current.jsx";
 import Proofs from "./pages/Proofs.jsx";
+import Concurrency from "./pages/Concurrency.jsx";
 import Settings from "./pages/Settings.jsx";
 
 const links = [
@@ -15,6 +16,7 @@ const links = [
   ["/history", "历史维"],
   ["/current", "当前镜"],
   ["/proofs", "核证"],
+  ["/concurrency", "并发持锁"],
   ["/settings", "站规"],
 ];
 
@@ -42,6 +44,7 @@ export default function App() {
           <Route path="/history" element={<History />} />
           <Route path="/current" element={<Current />} />
           <Route path="/proofs" element={<Proofs />} />
+          <Route path="/concurrency" element={<Concurrency />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>

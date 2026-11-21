@@ -106,6 +106,9 @@ def row_hash(open_time, close_time, weekday_mask, biz_status) -> str:
 def init_db():
     conn = connect()
     conn.executescript(SCHEMA)
+    from app.modules.concurrent_version_hold import service as _hold
+
+    _hold.migrate(conn)
     if not conn.execute("SELECT 1 FROM settings WHERE key='as_of_mode'").fetchone():
         conn.execute("INSERT INTO settings(key, value) VALUES ('as_of_mode', 'business_ts')")
     if conn.execute("SELECT COUNT(*) AS c FROM stores").fetchone()["c"] == 0:
